@@ -1,36 +1,52 @@
 const express = require("express") //подключаем модуль express
-const app = express() //вызываем express
-const usersData = require(`./usersData.js`)
 
-app.get("/users", (req, res) => {
+const mongoose = require('mongoose');
 
-    res.send(usersData)// ответ 
-})
 
-app.post("/users", (req, res) => {
-    let newUser = {}
-    newUser.email = req.query.email
-    newUser.password = req.query.password
-    newUser.id = Math.round(Math.random() * 1000)
-    usersData.push(newUser)
-    res.send(newUser)//ответ
-})
+mongoose
+    .connect('mongodb+srv://MihailKrasota:xegfrf,hf567@33333.xo3esxv.mongodb.net/?retryWrites=true&w=majority', { useNewUrlParser: true })
+    .then(() => {
+        const app = express() //вызываем express
 
-app.patch("/users", (req, res) => {
-    let userPatch = usersData.find(user => { return user.id == req.query.id })
-    userPatch.email = req.query.email
-    let userPatchIndex = usersData.findIndex(user => { return user.id == req.query.id })
-    usersData.splice(userPatchIndex, 1, userPatch)
-    res.send(userPatch)// ответ
-})
+        const SchemaUser = mongoose.Schema({
+            email: String,
+            password: String,
+            id: Number,
+        });
+        const model = mongoose.model('restoration', SchemaUser);
 
-app.delete("/users", (req, res) => {
-    let userDeleteIndex = usersData.findIndex(function (user) { return user.id == req.query.id })
-    usersData.splice(userDeleteIndex, 1)
-    res.send("пользователь удален")// ответ
-})
+        app.get("/users", async (req, res) => {
+            const users = await model.find({});
+            res.send(users)// ответ 
+        })
 
-app.listen(3000)
+        app.post("/users", async (req, res) => {
+            const user = model({
+                email: req.query.email,
+                password: req.query.password,
+                id: Math.round(Math.random() * 1000),
+            });
+            await user.save()
+            res.send(user)//ответ
+        })
+
+        app.patch("/users", async (req, res) => {
+            const userPatch = await model.findOne({ id: req.query.id })
+            userPatch.email = req.query.email
+            await userPatch.save()
+            res.send(userPatch)// ответ
+        })
+
+        app.delete("/users", async (req, res) => {
+            await model.deleteOne({ id: req.query.id })
+            res.send("пользователь удален")// ответ
+        })
+
+        app.listen(3000, () => {
+            console.log('Server has started!');
+        });
+    });
+
 
 
 
