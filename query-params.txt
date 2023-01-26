@@ -1,0 +1,3 @@
+в адресе  localhost:3000/users?password=1234&email=4@ukr.net
+все что после "?" это req.query 
+все что до ? это  req.params 
