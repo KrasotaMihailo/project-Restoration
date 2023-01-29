@@ -57,21 +57,19 @@ mongoose
         });
         const model = mongoose.model('restoration', SchemaUser); //для связи с MongoDB
         app.use(urlencodedParser)// подключение bodyParser сразу на все роуты
-        
-        
-        app.use('/users', swaggerUi.serve, swaggerUi.setup(swaggerSpec));//Создаем страницу Swagger
-      
-        
-                // GET
-                //документация запросов и ответов
+
+
+        app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerSpec));//Создаем страницу Swagger
+
+
+        // GET
+        //документация запросов и ответов
         /**
         * @swagger
         * /users:
         *   get:
         *     summary: получение списка пользователей
-        *     description: работа с учебным сервером,получение списка пользователей
-        *     parameters:
-        *              - in: path
+        *     description: работа с учебным сервером,получение списка пользователей        *     
         *     responses:
         *       200:
         *         description: A list of users.
@@ -98,10 +96,16 @@ mongoose
         *                         description:  ID пользователя, который запрашивается.
         *                         example: 123         
         */
-       
-       app.get("/users", async (req, res) => {
-           const users = await model.find({});
-           res.send(users)// ответ 
+
+        app.get("/users", async (req, res) => {
+            try {
+                const users = await model.find({});
+                res.send(users)// ответ 
+            }
+            catch (error) { 
+                console.log("catch")
+                res.send("Что-то пошло не так")
+            }
         })
 
 
@@ -110,8 +114,17 @@ mongoose
         * @swagger
         * /users:
         *   post:
-        *     summary: получение списка пользователей
+        *     summary: добавление пользователя
         *     description: работа с учебным сервером,создание пользователя в базе        
+        *     parameters:
+        *       - in: body
+        *         name: email
+        *         description: почта пользователя
+        *         type: string
+        *       - in: body
+        *         name: password
+        *         description: пароль
+        *         type: string 
         *     responses:
         *       200:
         *         description: A list of users.
@@ -153,7 +166,7 @@ mongoose
             await user.save()
             res.send(user)//ответ
         })
-        
+
         // PATCH
         /**
         * @swagger
@@ -161,6 +174,15 @@ mongoose
         *   patch:
         *     summary: изменение данных пользователя
         *     description: работа с учебным сервером, изменение данных пользователя
+        *     parameters:
+        *       - in: body
+        *         name: email
+        *         description: почта пользователя
+        *         type: string
+        *       - in: body
+        *         name: id
+        *         description: индивидуальный номер пользователя
+        *         type: number  
         *     responses:
         *       200:
         *         description: new user.
@@ -198,8 +220,8 @@ mongoose
             await userPatch.save()
             res.send(userPatch)// ответ
         })
-        
-        
+
+
         //DELETE
 
         /**
@@ -209,8 +231,10 @@ mongoose
         *     summary: удаление пользователя
         *     description: работа с учебным сервером, удаление пользователя из базы
         *     parameters:
+        *       - in: body
         *         name: id
-        *         description: номер пользователя, который удаляется.
+        *         description: индивидуальный номер пользователя
+        *         type: number  
         *     responses:
         *       200:
         *         description: new user.
@@ -254,4 +278,3 @@ mongoose
 
 
 
-   
