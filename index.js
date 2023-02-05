@@ -12,7 +12,7 @@ const SchemaUser = mongoose.Schema({ // Схема для формировани
   id: Number,
   token: String,
 });
-const model = mongoose.model('restoration', SchemaUser); // для связи с MongoDB
+const model = mongoose.model('users', SchemaUser); // для связи с MongoDB
 
 // Token (функция для создания токена)
 function token(sumString) { // создание токена
@@ -48,7 +48,7 @@ const urlencodedParser = bodyParser.urlencoded({ // для передачи па
   extended: false,
 });
 
-// Схемы валидаци для проверки приходящих параметров
+// Схемы валидации для проверки приходящих параметров с применением Joi
 const schemaValid1 = Joi.object({ // схема 1 для валидации с помощью бибилиотеки Joi
   password: Joi.string().min(4),
   email: Joi.string()
@@ -98,6 +98,8 @@ mongoose
 
     app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerSpec));// Создаем страницу Swagger
 
+    app.set('view engine', 'ejs'); // подключение модуля ejs в качестве движка для рендера
+
     // GET
     // документация запросов и ответов
     /**
@@ -143,9 +145,20 @@ mongoose
       }
     });
 
+//authorization
     app.get('/users/me', authorization, async (req, res) => {
       try {
         res.send(req.user);// берем токен из  req.user при прохождении мидлвейр
+      } catch (error) {
+        console.log('catch');
+        res.send('Что-то пошло не так');
+      }
+    });
+    //SSR
+    app.get('/profile/:id', async (req, res) => {//Роут для ejs 
+      try {
+        const user = await model.findOne({ id: req.params.id });
+        res.render('index', { email: `${user.email}`, id: `${user.id}` });
       } catch (error) {
         console.log('catch');
         res.send('Что-то пошло не так');
@@ -223,7 +236,7 @@ mongoose
         return res.status(400).json({ message: error.details }); // если валидация не проходит то код дальше не выполняется
       }
       try {
-        tokenValues = token(8);// получаем значение 8-розрядного токена
+        const tokenValues = token(8);// получаем значение 8-розрядного токена
         const user = model({
           email: req.body.email,
           password: req.body.password,
