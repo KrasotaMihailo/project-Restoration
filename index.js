@@ -356,7 +356,7 @@ mongoose
       }
     });
 
-    app.delete('/auth/logout', authorization, async (req, res) => {
+    app.delete&&&&&&&('/auth/logout', authorization, async (req, res) => {
       try {
         req.user.token = 0;
         await req.user.save();
