@@ -13,7 +13,7 @@ const SchemaUser = mongoose.Schema({ // Схема для формировани
   id: Number,
   token: String,
 });
-const model = mongoose.model('restoration', SchemaUser); // для связи с MongoDB
+const model = mongoose.model('users', SchemaUser); // для связи с MongoDB
 
 // Token (функция для создания токена)
 function token(sumString) { // создание токена
@@ -49,7 +49,7 @@ const urlencodedParser = bodyParser.urlencoded({ // для передачи па
   extended: false,
 });
 
-// Схемы валидаци для проверки приходящих параметров
+// Схемы валидации для проверки приходящих параметров с применением Joi
 const schemaValid1 = Joi.object({ // схема 1 для валидации с помощью бибилиотеки Joi
   password: Joi.string().min(4),
   email: Joi.string()
@@ -98,6 +98,8 @@ mongoose
     app.use(urlencodedParser);// подключение bodyParser сразу на все роуты
 
     app.use('/api', swaggerUi.serve, swaggerUi.setup(swaggerSpec));// Создаем страницу Swagger
+
+    app.set('view engine', 'ejs'); // подключение модуля ejs в качестве движка для рендера
 
     // GET
     // документация запросов и ответов
