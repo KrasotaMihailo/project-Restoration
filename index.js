@@ -5,6 +5,7 @@ const Joi = require('joi'); // подключение библиотеки Joi �
 const dotenv = require('dotenv').config(); // прячет данные
 const swaggerJSDoc = require('swagger-jsdoc');// SWAGGER
 const swaggerUi = require('swagger-ui-express');
+const jwt = require('jsonwebtoken');
 
 const SchemaUser = mongoose.Schema({ // Схема для формирования базы данных
   email: String,
@@ -27,11 +28,11 @@ function token(sumString) { // создание токена
 
 // Middleware
 async function authorization(req, res, next) {
-  console.log(req.headers);
-  const userToken = await model.findOne({ token: req.headers.authorization });
-  console.log(userToken);
-  if (userToken !== null && req.headers.authorization) { // (не равно)
+  const decoded = jwt.decode(req.headers.authorization, 'secret');
+  if (decoded !== null && req.headers.authorization) { // (не равно)
+    const userToken = await model.findOne({ token: req.headers.authorization });
     req.user = userToken;
+    console.log(decoded)
     next();
   } else {
     res.end('Не авторизировано');
@@ -143,9 +144,20 @@ mongoose
       }
     });
 
+    // задание по authorization
     app.get('/users/me', authorization, async (req, res) => {
       try {
         res.send(req.user);// берем токен из  req.user при прохождении мидлвейр
+      } catch (error) {
+        console.log('catch');
+        res.send('Что-то пошло не так');
+      }
+    });
+    // задание по SSR
+    app.get('/profile/:id', async (req, res) => { // Роут для ejs
+      try {
+        const user = await model.findOne({ id: req.params.id });
+        res.render('index', { email: user.email, id: user.id });
       } catch (error) {
         console.log('catch');
         res.send('Что-то пошло не так');
@@ -215,7 +227,7 @@ mongoose
         res.send('Что-то пошло не так');
       }
     });
-
+    // работа с JWT
     app.post('/auth/sign-in', async (req, res) => {
       const { error } = schemaValid1.validate(req.body);// Это блок валидации, валидация идет раньше чем действия по роуту,
 
@@ -223,16 +235,62 @@ mongoose
         return res.status(400).json({ message: error.details }); // если валидация не проходит то код дальше не выполняется
       }
       try {
-        tokenValues = token(8);// получаем значение 8-розрядного токена
+        const accessToken = jwt.sign(
+          { // написание accessToken
+            password: req.body.password,
+            email: req.body.email,
+          },
+          'secret', // секрет, хранится в .env
+        );
+        const refreshToken = jwt.sign(
+          { // написание refreshToken
+            password: req.body.password,
+            email: req.body.email,
+          },
+          'secret', // секрет, хранится в .env
+          {
+            expiresIn: '2h', // истекает через 2 час
+          },
+
+        );
+        const tokens = { accessToken, refreshToken };
         const user = model({
           email: req.body.email,
           password: req.body.password,
           id: Math.round(Math.random() * 1000),
-          token: tokenValues,
+          token: refreshToken,
         });
 
         await user.save();
-        res.send(user);// ответ
+        res.send(tokens);// ответ
+      } catch (error1) {
+        console.log('catch');
+        res.send('Что-то пошло не так');
+      }
+    });
+
+    app.post('/auth/refresh', async (req, res) => {
+      try {
+        const { refreshToken } = req.body;
+        const decoded = jwt.decode(refreshToken, 'secret');
+        console.log(decoded);
+        console.log(refreshToken);
+        const user = await model.findOne({ token: refreshToken });
+        if (!null) {
+          const refreshToken1 = jwt.sign(
+            { // написание refreshToken
+              password: req.body.password,
+              email: req.body.email,
+            },
+            'secret', // секрет, хранится в .env
+            {
+              expiresIn: '2h', // истекает через 2 час
+            },
+          );
+          console.log(refreshToken1);
+          user.token = refreshToken1;
+        }
+        res.send(user.token);// ответ
       } catch (error1) {
         console.log('catch');
         res.send('Что-то пошло не так');
