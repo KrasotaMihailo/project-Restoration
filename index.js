@@ -19,7 +19,7 @@ const model = mongoose.model('restoration', SchemaUser); // для связи с
 function token(sumString) { // создание токена
   const symbolArr = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM';
   let randomString = '';
-  for (let i = 0; i < sumString; i++) {
+  for (let i = 0; i < sumString; i += 1) {
     const index = Math.floor(Math.random() * symbolArr.length);
     randomString += symbolArr[index];
   }
@@ -32,7 +32,7 @@ async function authorization(req, res, next) {
   if (decoded !== null && req.headers.authorization) { // (не равно)
     const userToken = await model.findOne({ token: req.headers.authorization });
     req.user = userToken;
-    console.log(decoded)
+    console.log(decoded);
     next();
   } else {
     res.end('Не авторизировано');
@@ -395,7 +395,7 @@ mongoose
       try {
         await model.deleteOne({ id: req.body.id });
         res.send('пользователь удален');// ответ
-      } catch (error) {
+      } catch (error2) {
         console.log('catch');
         res.send('Что-то пошло не так');
       }
