@@ -5,6 +5,7 @@ const Joi = require('joi'); // подключение библиотеки Joi �
 const dotenv = require('dotenv').config(); // прячет данные
 const swaggerJSDoc = require('swagger-jsdoc');// SWAGGER
 const swaggerUi = require('swagger-ui-express');
+const jwt = require('jsonwebtoken');
 
 const SchemaUser = mongoose.Schema({ // Схема для формирования базы данных
   email: String,
@@ -18,23 +19,43 @@ const model = mongoose.model('users', SchemaUser); // для связи с Mongo
 function token(sumString) { // создание токена
   const symbolArr = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM';
   let randomString = '';
-  for (let i = 0; i < sumString; i++) {
+  for (let i = 0; i < sumString; i += 1) {
     const index = Math.floor(Math.random() * symbolArr.length);
     randomString += symbolArr[index];
   }
   return randomString;
 }
 
+// Функция для создания рефреш Токена
+function accessTok(pas, em, idUser) {
+  const accesTk = jwt.sign(
+    { // написание refreshToken
+      password: pas,
+      email: em,
+      id: idUser,
+    },
+    'secret', // секрет, хранится в .env
+    {
+      expiresIn: '1d', // истекает через 7 дней
+    },
+  );
+  return accesTk;
+}
+
 // Middleware
 async function authorization(req, res, next) {
-  console.log(req.headers);
-  const userToken = await model.findOne({ token: req.headers.authorization });
-  console.log(userToken);
-  if (userToken !== null && req.headers.authorization) { // (не равно)
-    req.user = userToken;
-    next();
-  } else {
-    res.end('Не авторизировано');
+  try {
+    const decoded = jwt.verify(req.headers.authorization, 'secret');// расшифровуе пользователя и проверяет время токена и записывет в req.user
+    console.log(decoded);
+    if (decoded !== null && req.headers.authorization) { // (не равно)
+      req.user = decoded;// user - поле обекта req
+      console.log(decoded);
+      next();
+    } else {
+      res.end('Не авторизировано');
+    }
+  } catch {
+    res.end('не авторизовано');
   }
 }
 
@@ -145,7 +166,7 @@ mongoose
       }
     });
 
-//authorization
+    // задание по authorization
     app.get('/users/me', authorization, async (req, res) => {
       try {
         res.send(req.user);// берем токен из  req.user при прохождении мидлвейр
@@ -154,11 +175,11 @@ mongoose
         res.send('Что-то пошло не так');
       }
     });
-    //SSR
-    app.get('/profile/:id', async (req, res) => {//Роут для ejs 
+    // задание по SSR
+    app.get('/profile/:id', async (req, res) => { // Роут для ejs
       try {
         const user = await model.findOne({ id: req.params.id });
-        res.render('index', { email: `${user.email}`, id: `${user.id}` });
+        res.render('index', { email: user.email, id: user.id });
       } catch (error) {
         console.log('catch');
         res.send('Что-то пошло не так');
@@ -207,7 +228,7 @@ mongoose
         *                         description:  ID пользователя, который запрашивается.
         *                         example: 123
         */
-
+    // создаем пользователя
     app.post('/users', async (req, res) => {
       const { error } = schemaValid1.validate(req.body);// Это блок валидации, валидация идет раньше чем действия по роуту,
       if (error) {
@@ -228,7 +249,8 @@ mongoose
         res.send('Что-то пошло не так');
       }
     });
-
+    // работа с JWT
+    // авторизация пользователя
     app.post('/auth/sign-in', async (req, res) => {
       const { error } = schemaValid1.validate(req.body);// Это блок валидации, валидация идет раньше чем действия по роуту,
 
@@ -236,18 +258,49 @@ mongoose
         return res.status(400).json({ message: error.details }); // если валидация не проходит то код дальше не выполняется
       }
       try {
-        const tokenValues = token(8);// получаем значение 8-розрядного токена
-        const user = model({
-          email: req.body.email,
-          password: req.body.password,
-          id: Math.round(Math.random() * 1000),
-          token: tokenValues,
-        });
+        const user = await model.findOne({ email: req.body.email, password: req.body.password });
+        if (!user) {
+          return res.send('пользователя не существует');// return остановит дальнейшее выполнение
+        }
 
+        const accessToken = accessTok(req.body.password, req.body.email, user.id);
+        const refreshToken = jwt.sign(
+          { // написание refreshToken
+            password: req.body.password,
+            email: req.body.email,
+          },
+          'secret', // секрет, хранится в .env
+          {
+            expiresIn: '2h', // истекает через 2 час
+          },
+
+        );
+        user.token = refreshToken;
         await user.save();
-        res.send(user);// ответ
+        const tokens = { accessToken, refreshToken };
+        res.send(tokens);// ответ
       } catch (error1) {
         console.log('catch');
+        res.send('Что-то пошло не так');
+      }
+    });
+
+    app.post('/auth/refresh', async (req, res) => {
+      try {
+        const { refreshToken } = req.body;
+        const decoded = jwt.verify(refreshToken, 'secret');
+        console.log(decoded);
+        console.log(refreshToken);
+        const user = await model.findOne({ token: refreshToken });
+        if (user) { // если юзер существует
+          const accesToken = accessTok(user.password, user.email, user.id);
+          console.log(accesToken);
+
+          return res.send(accesToken);// ответ
+        }
+        res.send('Неправильный токен');
+      } catch (error1) {
+        console.log(error1);
         res.send('Что-то пошло не так');
       }
     });
@@ -350,13 +403,13 @@ mongoose
       try {
         await model.deleteOne({ id: req.body.id });
         res.send('пользователь удален');// ответ
-      } catch (error) {
+      } catch (error2) {
         console.log('catch');
         res.send('Что-то пошло не так');
       }
     });
 
-    app.delete&&&&&&&('/auth/logout', authorization, async (req, res) => {
+    app.delete('/auth/logout', authorization, async (req, res) => {
       try {
         req.user.token = 0;
         await req.user.save();
