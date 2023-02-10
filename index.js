@@ -26,16 +26,36 @@ function token(sumString) { // создание токена
   return randomString;
 }
 
+// Функция для создания рефреш Токена
+function accessTok(pas, em, idUser) {
+  const accesTk = jwt.sign(
+    { // написание refreshToken
+      password: pas,
+      email: em,
+      id: idUser,
+    },
+    'secret', // секрет, хранится в .env
+    {
+      expiresIn: '1d', // истекает через 7 дней
+    },
+  );
+  return accesTk;
+}
+
 // Middleware
 async function authorization(req, res, next) {
-  const decoded = jwt.decode(req.headers.authorization, 'secret');
-  if (decoded !== null && req.headers.authorization) { // (не равно)
-    const userToken = await model.findOne({ token: req.headers.authorization });
-    req.user = userToken;
+  try {
+    const decoded = jwt.verify(req.headers.authorization, 'secret');// расшифровуе пользователя и проверяет время токена и записывет в req.user
     console.log(decoded);
-    next();
-  } else {
-    res.end('Не авторизировано');
+    if (decoded !== null && req.headers.authorization) { // (не равно)
+      req.user = decoded;// user - поле обекта req
+      console.log(decoded);
+      next();
+    } else {
+      res.end('Не авторизировано');
+    }
+  } catch {
+    res.end('не авторизовано');
   }
 }
 
@@ -208,7 +228,7 @@ mongoose
         *                         description:  ID пользователя, который запрашивается.
         *                         example: 123
         */
-
+    // создаем пользователя
     app.post('/users', async (req, res) => {
       const { error } = schemaValid1.validate(req.body);// Это блок валидации, валидация идет раньше чем действия по роуту,
       if (error) {
@@ -230,6 +250,7 @@ mongoose
       }
     });
     // работа с JWT
+    // авторизация пользователя
     app.post('/auth/sign-in', async (req, res) => {
       const { error } = schemaValid1.validate(req.body);// Это блок валидации, валидация идет раньше чем действия по роуту,
 
@@ -237,13 +258,12 @@ mongoose
         return res.status(400).json({ message: error.details }); // если валидация не проходит то код дальше не выполняется
       }
       try {
-        const accessToken = jwt.sign(
-          { // написание accessToken
-            password: req.body.password,
-            email: req.body.email,
-          },
-          'secret', // секрет, хранится в .env
-        );
+        const user = await model.findOne({ email: req.body.email, password: req.body.password });
+        if (!user) {
+          return res.send('пользователя не существует');// return остановит дальнейшее выполнение
+        }
+
+        const accessToken = accessTok(req.body.password, req.body.email, user.id);
         const refreshToken = jwt.sign(
           { // написание refreshToken
             password: req.body.password,
@@ -255,15 +275,9 @@ mongoose
           },
 
         );
-        const tokens = { accessToken, refreshToken };
-        const user = model({
-          email: req.body.email,
-          password: req.body.password,
-          id: Math.round(Math.random() * 1000),
-          token: refreshToken,
-        });
-
+        user.token = refreshToken;
         await user.save();
+        const tokens = { accessToken, refreshToken };
         res.send(tokens);// ответ
       } catch (error1) {
         console.log('catch');
@@ -274,27 +288,19 @@ mongoose
     app.post('/auth/refresh', async (req, res) => {
       try {
         const { refreshToken } = req.body;
-        const decoded = jwt.decode(refreshToken, 'secret');
+        const decoded = jwt.verify(refreshToken, 'secret');
         console.log(decoded);
         console.log(refreshToken);
         const user = await model.findOne({ token: refreshToken });
-        if (!null) {
-          const refreshToken1 = jwt.sign(
-            { // написание refreshToken
-              password: req.body.password,
-              email: req.body.email,
-            },
-            'secret', // секрет, хранится в .env
-            {
-              expiresIn: '2h', // истекает через 2 час
-            },
-          );
-          console.log(refreshToken1);
-          user.token = refreshToken1;
+        if (user) { // если юзер существует
+          const accesToken = accessTok(user.password, user.email, user.id);
+          console.log(accesToken);
+
+          return res.send(accesToken);// ответ
         }
-        res.send(user.token);// ответ
+        res.send('Неправильный токен');
       } catch (error1) {
-        console.log('catch');
+        console.log(error1);
         res.send('Что-то пошло не так');
       }
     });
