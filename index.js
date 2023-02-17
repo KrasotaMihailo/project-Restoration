@@ -186,6 +186,17 @@ mongoose
       }
     });
 
+    // Задание по ejs
+    app.get('/profiles', async (req, res) => { // Роут для ejs
+      try {
+        const users = await model.find({ });
+        res.render('indexpage', { users });
+      } catch (error) {
+        console.log('catch');
+        res.send('Что-то пошло не так');
+      }
+    });
+
     // POST
     /**
         * @swagger
