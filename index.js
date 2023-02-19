@@ -175,27 +175,6 @@ mongoose
         res.send('Что-то пошло не так');
       }
     });
-    // задание по SSR
-    app.get('/profile/:id', async (req, res) => { // Роут для ejs
-      try {
-        const user = await model.findOne({ id: req.params.id });
-        res.render('index', { email: user.email, id: user.id });
-      } catch (error) {
-        console.log('catch');
-        res.send('Что-то пошло не так');
-      }
-    });
-
-    // Задание по ejs
-    app.get('/profiles', async (req, res) => { // Роут для ejs
-      try {
-        const users = await model.find({ });
-        res.render('indexpage', { users });
-      } catch (error) {
-        console.log('catch');
-        res.send('Что-то пошло не так');
-      }
-    });
 
     // POST
     /**
