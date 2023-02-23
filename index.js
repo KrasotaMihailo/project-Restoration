@@ -99,7 +99,7 @@ const schemaValid5 = Joi.object({ // схема 5 для валидации с �
   authorId: Joi.string(),
   title: Joi.string(),
   description: Joi.string(),
-  image: Joi.string(),
+  image: Joi.string().uri(),
 });
 
 // SWAGGER
