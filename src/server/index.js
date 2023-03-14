@@ -1,7 +1,11 @@
 // Тут мы запускаем сервер
+require('dotenv').config()
 const server = require('./server');
-const port = server.get('port');
+const connection = require('../config/connection');
 
-server.listen(port, () => {
+const port = server.get('port');
+connection.then(() => {
+  server.listen(port, () => {
     console.log(`Server listening on port ${port}`);
+  });
 });

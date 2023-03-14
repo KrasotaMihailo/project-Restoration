@@ -2,12 +2,11 @@
 const mongoose = require('mongoose');
 
 // схема для базы данных для коллекции "users"
-const SchemaUser = mongoose.Schema({ // Схема для формирования базы данных
-  email: String,
-  password: String,
-  id: Number,
-  token: String,
+const SchemaBook = mongoose.Schema({ // Схема для формирования базы данных
+  title: String,
+  description: String,
+  image: String,
 });
-const model = mongoose.model('users', SchemaUser); // для связи с MongoDB
+const modelBook = mongoose.model('books', SchemaBook); // для связи с MongoDB
 
-module.exports = model;
+module.exports = modelBook;

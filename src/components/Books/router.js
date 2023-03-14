@@ -5,25 +5,13 @@ const controller = require('./index');
 
 const authorization = require('../../middlewares/authorization');
 
-console.log (authorization)
+console.log(authorization);
 
 // Получение данных всех пользователей
-router.get('/', controller.getUsers);
-
-// получение данных авторизованого пользователя
-router.get('/me', authorization, controller.getAuthUser);
+router.get('/', controller.getBooks);
 
 // POST
-// создаем пользователя
-router.post('/', controller.creatUser);
-
-// PATCH
-//Изменение данных пользователя
-router.patch('/', authorization, controller.patchUser);
-
-
-// DELETE
-//Удаление пользователя
-router.delete('/', controller.deleteUser)
+// создаем книгу
+router.post('/', controller.creatBook);
 
 module.exports = router;
