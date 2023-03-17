@@ -5,7 +5,7 @@ const controller = require('./index');
 
 const authorization = require('../../middlewares/authorization');
 
-console.log (authorization)
+console.log(authorization);
 
 // Получение данных всех пользователей
 router.get('/', controller.getUsers);
@@ -18,12 +18,11 @@ router.get('/me', authorization, controller.getAuthUser);
 router.post('/', controller.creatUser);
 
 // PATCH
-//Изменение данных пользователя
+// Изменение данных пользователя
 router.patch('/', authorization, controller.patchUser);
 
-
 // DELETE
-//Удаление пользователя
-router.delete('/', controller.deleteUser)
+// Удаление пользователя
+router.delete('/', controller.deleteUser);
 
 module.exports = router;

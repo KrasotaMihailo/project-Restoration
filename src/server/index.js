@@ -1,5 +1,5 @@
 // Тут мы запускаем сервер
-require('dotenv').config()
+require('dotenv').config();
 const server = require('./server');
 const connection = require('../config/connection');
 
