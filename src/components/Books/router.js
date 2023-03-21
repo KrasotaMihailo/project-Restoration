@@ -5,8 +5,6 @@ const controller = require('./index');
 
 const authorization = require('../../middlewares/authorization');
 
-console.log(authorization);
-
 // Получение данных всех пользователей
 router.get('/', controller.getBooks);
 

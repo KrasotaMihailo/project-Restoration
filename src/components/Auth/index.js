@@ -45,13 +45,9 @@ async function refreshTokenUser(req, res) {
   try {
     const { refreshToken } = req.body;
     const decoded = jwt.verify(refreshToken, 'secret');
-    console.log(decoded);
-    console.log(refreshToken);
     const user = await model.findOne({ token: refreshToken });
     if (user) { // если юзер существует
       const accesToken = accessTok(user.password, user.email, user._id);
-      console.log(accesToken);
-
       return res.send(accesToken);// ответ
     }
     res.send('Неправильный токен');
@@ -65,7 +61,6 @@ async function refreshTokenUser(req, res) {
 async function logoutUser(req, res) {
   try {
     await model.updateOne({ _id: req.user._id }, { $set: { token: 0 } });// первый объект - то по чем ищем, второй обект - то что меняем
-    console.log(req.user);
     res.send('пользователь разлогинен');// ответ
   } catch (error1) {
     console.log(error1);

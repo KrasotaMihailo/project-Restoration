@@ -5,8 +5,6 @@ const controller = require('./index');
 
 const authorization = require('../../middlewares/authorization');
 
-console.log(authorization);
-
 // POST
 // авторизация пользователя существующего в базе
 router.post('/sign-in', controller.authUser);

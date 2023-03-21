@@ -26,7 +26,6 @@ async function creatBook(req, res) {
     if (!authorBook) { // если юзер существует
       return res.send('Такого автора нет');// ответ
     }
-    console.log(req.body);
     const book = modelBook({
       title: req.body.title,
       description: req.body.description,
